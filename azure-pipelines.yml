@@ -14,7 +14,7 @@ stages:
   jobs:
   - job: Deploy
     pool:
-      name: self-hosted-pool   # 👈 your self-hosted agent pool
+      name: SelfHosted-Linux   # 👈 your self-hosted agent pool
     steps:
 
     - checkout: self
