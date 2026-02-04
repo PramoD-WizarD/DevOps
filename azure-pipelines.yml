@@ -1,0 +1,45 @@
+trigger:
+- main
+
+variables:
+  PACKAGE_NAME: MyPackage
+  MSR_HOME: /mnt/app/wm1015/IntegrationServer
+
+steps:
+- checkout: self
+
+- task: Bash@3
+  displayName: "Zip webMethods package"
+  inputs:
+    targetType: inline
+    script: |
+      zip -r $DevOps.zip $DevOps
+
+- task: CopyFilesOverSSH@0
+  displayName: "Copy package to MSR VM"
+  inputs:
+    sshEndpoint: MSR-SSH
+    sourceFolder: $(System.DefaultWorkingDirectory)
+    contents: "$DevOps.zip"
+    targetFolder: /tmp
+
+- task: SSH@0
+  displayName: "Deploy package to MSR"
+  inputs:
+    sshEndpoint: MSR-SSH
+    runOptions: inline
+    inline: |
+      cd $/mnt/app/wm1015/IntegrationServer/packages
+      unzip -o /tmp/$DevOps.zip
+
+- task: SSH@0
+  displayName: "Restart MSR"
+  inputs:
+    sshEndpoint: MSR-SSH
+    runOptions: inline
+    inline: |
+      cd $/mnt/app/wm1015/IntegrationServer/bin
+      ./shutdown.sh
+      sleep 10
+      ./startup.sh
+
