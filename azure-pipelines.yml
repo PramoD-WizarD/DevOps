@@ -5,7 +5,7 @@ trigger:
 
 variables:
 - name: PACKAGE_NAME
-  value: MyPackage
+  value: DevOps
 - name: MSR_HOME
   value: /mnt/app/wm1015/IntegrationServer
 
