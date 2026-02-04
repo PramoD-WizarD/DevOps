@@ -1,45 +1,55 @@
 trigger:
-- main
+  branches:
+    include:
+    - main
 
 variables:
-  PACKAGE_NAME: MyPackage
-  MSR_HOME: /mnt/app/wm1015/IntegrationServer
+- name: PACKAGE_NAME
+  value: MyPackage
+- name: MSR_HOME
+  value: /mnt/app/wm1015/IntegrationServer
 
-steps:
-- checkout: self
+stages:
+- stage: Deploy_MSR
+  jobs:
+  - job: Deploy
+    pool:
+      name: self-hosted-pool   # 👈 your self-hosted agent pool
+    steps:
 
-- task: Bash@3
-  displayName: "Zip webMethods package"
-  inputs:
-    targetType: inline
-    script: |
-      zip -r $DevOps.zip $DevOps
+    - checkout: self
 
-- task: CopyFilesOverSSH@0
-  displayName: "Copy package to MSR VM"
-  inputs:
-    sshEndpoint: MSR-SSH
-    sourceFolder: $(System.DefaultWorkingDirectory)
-    contents: "$DevOps.zip"
-    targetFolder: /tmp
+    - task: Bash@3
+      displayName: "Zip webMethods package"
+      inputs:
+        targetType: inline
+        script: |
+          zip -r $(PACKAGE_NAME).zip $(PACKAGE_NAME)
 
-- task: SSH@0
-  displayName: "Deploy package to MSR"
-  inputs:
-    sshEndpoint: MSR-SSH
-    runOptions: inline
-    inline: |
-      cd $/mnt/app/wm1015/IntegrationServer/packages
-      unzip -o /tmp/$DevOps.zip
+    - task: CopyFilesOverSSH@0
+      displayName: "Copy package to MSR VM"
+      inputs:
+        sshEndpoint: MSR-SSH
+        sourceFolder: $(System.DefaultWorkingDirectory)
+        contents: "$(PACKAGE_NAME).zip"
+        targetFolder: /tmp
 
-- task: SSH@0
-  displayName: "Restart MSR"
-  inputs:
-    sshEndpoint: MSR-SSH
-    runOptions: inline
-    inline: |
-      cd $/mnt/app/wm1015/IntegrationServer/bin
-      ./shutdown.sh
-      sleep 10
-      ./startup.sh
+    - task: SSH@0
+      displayName: "Deploy package to MSR"
+      inputs:
+        sshEndpoint: MSR-SSH
+        runOptions: inline
+        inline: |
+          cd $(MSR_HOME)/packages
+          unzip -o /tmp/$(PACKAGE_NAME).zip
 
+    - task: SSH@0
+      displayName: "Restart MSR"
+      inputs:
+        sshEndpoint: MSR-SSH
+        runOptions: inline
+        inline: |
+          cd $(MSR_HOME)/bin
+          ./shutdown.sh
+          sleep 10
+          ./startup.sh
